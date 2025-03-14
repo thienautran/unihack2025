@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
+import Menu from '@/components/ui/menu'
 
 export default function AutoCamera() {
   const [cameraStatus, setCameraStatus] = useState('initializing');
@@ -111,6 +112,11 @@ export default function AutoCamera() {
         {/* Camera view */}
         {!capturedImage && (
           <div className="flex-1 relative">
+            {/* Add the Menu component at the top left */}
+            <div className="absolute top-4 left-4 z-50">
+              <Menu />
+            </div>
+            
             {/* Video element */}
             <video
               ref={videoRef}
@@ -173,6 +179,11 @@ export default function AutoCamera() {
         {/* Preview captured image */}
         {capturedImage && (
           <div className="flex-1 flex flex-col">
+            {/* Keep menu visible on preview screen too */}
+            <div className="absolute top-4 left-4 z-50">
+              <Menu />
+            </div>
+            
             <div className="flex-1 relative">
               <img 
                 src={capturedImage} 
