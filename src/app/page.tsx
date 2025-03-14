@@ -9,8 +9,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { getGameList, getGamePrompt } from './actions';
 
-export default function Home() {
+export default async function Home() {
+  const list = await getGameList();
+  console.log(list);
+
+  const prompt = await getGamePrompt('1234');
+  console.log(prompt);
+
   return (
     <div className='flex flex-1 flex-col gap-4 justify-center items-center h-screen bg-slate-950 text-white'>
       <h1 className='text-4xl'>Hello Unihack</h1>
