@@ -7,6 +7,7 @@ import Menu from '@/components/ui/menu'
 export default function AutoCamera() {
   const [cameraStatus, setCameraStatus] = useState('initializing');
   const [capturedImage, setCapturedImage] = useState(null);
+  const [messageText, setMessageText] = useState("");
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -66,26 +67,38 @@ export default function AutoCamera() {
 
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current || cameraStatus !== 'active') return;
+
+    // show text on the screen, let do hello world for now
+    // change this to the actually output from AI in the future
+    setMessageText("Hello World");
+
+    // text disappear after 3 seconds
+    setTimeout(() => {
+      setMessageText("");
+    }, 3000); // 3000 milliseconds means 3 seconds
+
+    // Code for capturing the actual photo is commented out as in your example
+    // This keeps the camera running instead of capturing and stopping
+
+    // const video = videoRef.current;
+    // const canvas = canvasRef.current;
+    // const context = canvas.getContext('2d');
     
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+    // // Set canvas dimensions to match video
+    // canvas.width = video.videoWidth;
+    // canvas.height = video.videoHeight;
     
-    // Set canvas dimensions to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // // Draw video frame to canvas
+    // context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    // Draw video frame to canvas
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // // Get image data
+    // const imageData = canvas.toDataURL('image/png');
+    // setCapturedImage(imageData);
     
-    // Get image data
-    const imageData = canvas.toDataURL('image/png');
-    setCapturedImage(imageData);
-    
-    // Stop camera after capturing
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
+    // // Stop camera after capturing
+    // if (streamRef.current) {
+    //   streamRef.current.getTracks().forEach(track => track.stop());
+    // }
   };
 
   const retakePhoto = () => {
@@ -126,6 +139,15 @@ export default function AutoCamera() {
               className="absolute inset-0 w-full h-full object-cover"
             />
             
+            {/* Display text */}
+            {messageText && (
+              <div className="absolute top-20 inset-x-0 flex justify-center">
+                <div className="bg-black bg-opacity-70 text-white px-4 py-2 rounded">
+                  {messageText}
+                </div>
+              </div>
+            )}
+            
             {/* Camera loading states */}
             {cameraStatus !== 'active' && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 text-white">
@@ -155,10 +177,10 @@ export default function AutoCamera() {
               </div>
             )}
             
-            {/* Card capture guide */}
+            {/* Card capture guide - Modified to be vertical card shaped */}
             {cameraStatus === 'active' && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="border-2 border-white border-opacity-70 rounded w-4/5 h-2/5"></div>
+                <div className="border-2 border-white border-opacity-70 rounded aspect-[0.63/1] h-3/5 max-w-1/2"></div>
               </div>
             )}
             
