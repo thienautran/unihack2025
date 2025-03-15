@@ -3,10 +3,14 @@
 import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 import Menu from '@/components/ui/menu'
+import CardOptions from '@/components/ui/cardOption'
 
 export default function AutoCamera() {
   const [cameraStatus, setCameraStatus] = useState('initializing');
   const [capturedImage, setCapturedImage] = useState(null);
+  const [messageText, setMessageText] = useState("");
+  const [matchingCards, setMatchingCards] = useState([]);
+  const [showMatches, setShowMatches] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -66,36 +70,70 @@ export default function AutoCamera() {
 
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current || cameraStatus !== 'active') return;
+
+    // Show text on the screen
+    setMessageText("Analyzing card...");
+
+    // Sample placeholder matching cards data
+    // In a real app, this would come from your card recognition model
+    const dummyMatchingCards = [
+      { id: 1, name: "Visa Platinum", confidence: 0.89, image: "/api/placeholder/60/90" },
+      { id: 2, name: "Amex Gold", confidence: 0.72, image: "/api/placeholder/60/90" },
+      { id: 3, name: "Mastercard", confidence: 0.65, image: "/api/placeholder/60/90" },
+      { id: 4, name: "Discover", confidence: 0.51, image: "/api/placeholder/60/90" }
+    ];
+
+    // Show matching cards after a short delay to simulate processing
+    setTimeout(() => {
+      setMessageText("");
+      setMatchingCards(dummyMatchingCards);
+      setShowMatches(true);
+    }, 1500);
+
+    // Code for capturing the actual photo is commented out as in your example
+    // This keeps the camera running instead of capturing and stopping
+
+    // const video = videoRef.current;
+    // const canvas = canvasRef.current;
+    // const context = canvas.getContext('2d');
     
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+    // // Set canvas dimensions to match video
+    // canvas.width = video.videoWidth;
+    // canvas.height = video.videoHeight;
     
-    // Set canvas dimensions to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // // Draw video frame to canvas
+    // context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    // Draw video frame to canvas
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // // Get image data
+    // const imageData = canvas.toDataURL('image/png');
+    // setCapturedImage(imageData);
     
-    // Get image data
-    const imageData = canvas.toDataURL('image/png');
-    setCapturedImage(imageData);
-    
-    // Stop camera after capturing
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
+    // // Stop camera after capturing
+    // if (streamRef.current) {
+    //   streamRef.current.getTracks().forEach(track => track.stop());
+    // }
   };
 
   const retakePhoto = () => {
     setCapturedImage(null);
+    setShowMatches(false);
+    setMatchingCards([]);
     initializeCamera();
   };
 
   const processCard = () => {
-    // This is where you would add card processing logic
-    alert('Processing card...');
+    // Get the most confident card (first in the array)
+    const selectedCard = matchingCards.length > 0 ? matchingCards[0] : null;
+    if (selectedCard) {
+      alert(`Selected card: ${selectedCard.name} with confidence ${selectedCard.confidence.toFixed(2)}`);
+    } else {
+      alert('No card selected');
+    }
+  };
+  
+  const selectCard = (card) => {
+    alert(`You selected: ${card.name}`);
+    // Here you would normally process the user's card selection
   };
 
   return (
@@ -126,6 +164,15 @@ export default function AutoCamera() {
               className="absolute inset-0 w-full h-full object-cover"
             />
             
+            {/* Display text */}
+            {messageText && (
+              <div className="absolute top-20 inset-x-0 flex justify-center">
+                <div className="bg-black bg-opacity-70 text-white px-4 py-2 rounded">
+                  {messageText}
+                </div>
+              </div>
+            )}
+            
             {/* Camera loading states */}
             {cameraStatus !== 'active' && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 text-white">
@@ -155,12 +202,19 @@ export default function AutoCamera() {
               </div>
             )}
             
-            {/* Card capture guide */}
+            {/* Card capture guide - Modified to be vertical card shaped */}
             {cameraStatus === 'active' && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="border-2 border-white border-opacity-70 rounded w-4/5 h-2/5"></div>
+                <div className="border-2 border-white border-opacity-70 rounded aspect-[0.63/1] h-3/5 max-w-1/2"></div>
               </div>
             )}
+            
+            {/* Card matching results */}
+            <CardOptions 
+              matchingCards={matchingCards}
+              visible={showMatches}
+              onSelectCard={selectCard}
+            />
             
             {/* Capture button */}
             {cameraStatus === 'active' && (
