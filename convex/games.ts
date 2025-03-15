@@ -11,6 +11,6 @@ export const getGamesList = query({
 export const getGamePrompt = query({
   args: { gameId: v.id('games') },
   handler: async (ctx, args) => {
-    return ctx.db.get(args.gameId);
+    return await ctx.db.get(args.gameId);
   },
 });
