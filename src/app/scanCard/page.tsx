@@ -11,6 +11,7 @@ export default function AutoCamera() {
   const [messageText, setMessageText] = useState("");
   const [matchingCards, setMatchingCards] = useState([]);
   const [showMatches, setShowMatches] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -68,50 +69,56 @@ export default function AutoCamera() {
     }
   };
 
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current || cameraStatus !== 'active') return;
+  const capturePhoto = async () => {
+    if (!videoRef.current || !canvasRef.current || cameraStatus !== 'active' || isProcessing) return;
 
     // Show text on the screen
+    setIsProcessing(true);
     setMessageText("Analyzing card...");
-
-    // Sample placeholder matching cards data
-    // In a real app, this would come from your card recognition model
-    const dummyMatchingCards = [
-      { id: 1, name: "Visa Platinum", confidence: 0.89, image: "/api/placeholder/60/90" },
-      { id: 2, name: "Amex Gold", confidence: 0.72, image: "/api/placeholder/60/90" },
-      { id: 3, name: "Mastercard", confidence: 0.65, image: "/api/placeholder/60/90" },
-      { id: 4, name: "Discover", confidence: 0.51, image: "/api/placeholder/60/90" }
-    ];
-
-    // Show matching cards after a short delay to simulate processing
-    setTimeout(() => {
+    
+    // Get video dimensions
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw video frame to canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Get image data
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    setCapturedImage(imageData);
+    
+    try {
+      // Call the API to recognize the card
+      const response = await fetch('/api/recognize-card', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageData }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Update state with the results
+      setMatchingCards(data.matchingCards || []);
       setMessageText("");
-      setMatchingCards(dummyMatchingCards);
       setShowMatches(true);
-    }, 1500);
-
-    // Code for capturing the actual photo is commented out as in your example
-    // This keeps the camera running instead of capturing and stopping
-
-    // const video = videoRef.current;
-    // const canvas = canvasRef.current;
-    // const context = canvas.getContext('2d');
-    
-    // // Set canvas dimensions to match video
-    // canvas.width = video.videoWidth;
-    // canvas.height = video.videoHeight;
-    
-    // // Draw video frame to canvas
-    // context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // // Get image data
-    // const imageData = canvas.toDataURL('image/png');
-    // setCapturedImage(imageData);
-    
-    // // Stop camera after capturing
-    // if (streamRef.current) {
-    //   streamRef.current.getTracks().forEach(track => track.stop());
-    // }
+    } catch (error) {
+      console.error('Error recognizing card:', error);
+      setMessageText("Error analyzing card. Please try again.");
+      setTimeout(() => setMessageText(""), 3000);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const retakePhoto = () => {
@@ -221,9 +228,14 @@ export default function AutoCamera() {
               <div className="absolute bottom-8 inset-x-0 flex justify-center">
                 <button
                   onClick={capturePhoto}
-                  className="w-16 h-16 rounded-full bg-white flex items-center justify-center"
+                  disabled={isProcessing}
+                  className={`w-16 h-16 rounded-full ${isProcessing ? 'bg-gray-400' : 'bg-white'} flex items-center justify-center`}
                 >
-                  <div className="w-14 h-14 rounded-full border-2 border-gray-800"></div>
+                  {isProcessing ? (
+                    <div className="w-8 h-8 border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <div className="w-14 h-14 rounded-full border-2 border-gray-800"></div>
+                  )}
                 </button>
               </div>
             )}
@@ -244,6 +256,13 @@ export default function AutoCamera() {
                 alt="Captured card" 
                 className="absolute inset-0 w-full h-full object-contain bg-black" 
               />
+              
+              {/* Show matching cards on the preview screen as well */}
+              <CardOptions 
+                matchingCards={matchingCards}
+                visible={showMatches}
+                onSelectCard={selectCard}
+              />
             </div>
             
             <div className="p-4 flex space-x-4">
@@ -258,7 +277,7 @@ export default function AutoCamera() {
                 onClick={processCard}
                 className="flex-1 py-3 bg-blue-500 text-white rounded-lg"
               >
-                Use Photo
+                Use Top Match
               </button>
             </div>
           </div>
