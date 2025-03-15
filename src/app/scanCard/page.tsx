@@ -3,13 +3,34 @@
 import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 import Menu from '@/components/ui/menu'
+import CardOptions from '@/components/ui/cardOption'
+import { useSearchParams } from 'next/navigation';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 
 export default function AutoCamera() {
   const [cameraStatus, setCameraStatus] = useState('initializing');
   const [capturedImage, setCapturedImage] = useState(null);
+  const [messageText, setMessageText] = useState("");
+  const [matchingCards, setMatchingCards] = useState([]);
+  const [showMatches, setShowMatches] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+  const searchParams = useSearchParams();
+  const gameId = searchParams.get('id');
+  
+  // Only fetch the prompt if gameId exists
+  const prompt = gameId 
+    ? useQuery(api.games.getGamePrompt, { gameId: gameId }) 
+    : null;
+  
+  // Only log if prompt exists (which only happens if gameId exists)
+  if (prompt) {
+    console.log(prompt);
+  }
+
 
   // Auto-start camera on page load
   useEffect(() => {
@@ -64,9 +85,14 @@ export default function AutoCamera() {
     }
   };
 
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current || cameraStatus !== 'active') return;
+  const capturePhoto = async () => {
+    if (!videoRef.current || !canvasRef.current || cameraStatus !== 'active' || isProcessing) return;
+
+    // Show text on the screen
+    setIsProcessing(true);
+    setMessageText("Analyzing card...");
     
+    // Get video dimensions
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
@@ -79,23 +105,61 @@ export default function AutoCamera() {
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
     // Get image data
-    const imageData = canvas.toDataURL('image/png');
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
     setCapturedImage(imageData);
     
-    // Stop camera after capturing
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+    try {
+      // Call the API to recognize the card, including the game prompt if available
+      const response = await fetch('/api/recognize-card', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          imageData,
+          gamePrompt: prompt?.prompt // Send the game prompt to the API
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Update state with the results
+      setMatchingCards(data.matchingCards || []);
+      setMessageText("");
+      setShowMatches(true);
+    } catch (error) {
+      console.error('Error recognizing card:', error);
+      setMessageText("Error analyzing card. Please try again.");
+      setTimeout(() => setMessageText(""), 3000);
+    } finally {
+      setIsProcessing(false);
     }
-  };
+};
 
   const retakePhoto = () => {
     setCapturedImage(null);
+    setShowMatches(false);
+    setMatchingCards([]);
     initializeCamera();
   };
 
   const processCard = () => {
-    // This is where you would add card processing logic
-    alert('Processing card...');
+    // Get the most confident card (first in the array)
+    const selectedCard = matchingCards.length > 0 ? matchingCards[0] : null;
+    if (selectedCard) {
+      alert(`Selected card: ${selectedCard.name} with confidence ${selectedCard.confidence.toFixed(2)}`);
+    } else {
+      alert('No card selected');
+    }
+  };
+  
+  const selectCard = (card) => {
+    alert(`You selected: ${card.name}`);
+    // Here you would normally process the user's card selection
   };
 
   return (
@@ -126,6 +190,15 @@ export default function AutoCamera() {
               className="absolute inset-0 w-full h-full object-cover"
             />
             
+            {/* Display text */}
+            {messageText && (
+              <div className="absolute top-20 inset-x-0 flex justify-center">
+                <div className="bg-black bg-opacity-70 text-white px-4 py-2 rounded">
+                  {messageText}
+                </div>
+              </div>
+            )}
+            
             {/* Camera loading states */}
             {cameraStatus !== 'active' && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 text-white">
@@ -155,21 +228,33 @@ export default function AutoCamera() {
               </div>
             )}
             
-            {/* Card capture guide */}
+            {/* Card capture guide - Modified to be vertical card shaped */}
             {cameraStatus === 'active' && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="border-2 border-white border-opacity-70 rounded w-4/5 h-2/5"></div>
+                <div className="border-2 border-white border-opacity-70 rounded aspect-[0.63/1] h-3/5 max-w-1/2"></div>
               </div>
             )}
+            
+            {/* Card matching results */}
+            <CardOptions 
+              matchingCards={matchingCards}
+              visible={showMatches}
+              onSelectCard={selectCard}
+            />
             
             {/* Capture button */}
             {cameraStatus === 'active' && (
               <div className="absolute bottom-8 inset-x-0 flex justify-center">
                 <button
                   onClick={capturePhoto}
-                  className="w-16 h-16 rounded-full bg-white flex items-center justify-center"
+                  disabled={isProcessing}
+                  className={`w-16 h-16 rounded-full ${isProcessing ? 'bg-gray-400' : 'bg-white'} flex items-center justify-center`}
                 >
-                  <div className="w-14 h-14 rounded-full border-2 border-gray-800"></div>
+                  {isProcessing ? (
+                    <div className="w-8 h-8 border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <div className="w-14 h-14 rounded-full border-2 border-gray-800"></div>
+                  )}
                 </button>
               </div>
             )}
@@ -190,6 +275,13 @@ export default function AutoCamera() {
                 alt="Captured card" 
                 className="absolute inset-0 w-full h-full object-contain bg-black" 
               />
+              
+              {/* Show matching cards on the preview screen as well */}
+              <CardOptions 
+                matchingCards={matchingCards}
+                visible={showMatches}
+                onSelectCard={selectCard}
+              />
             </div>
             
             <div className="p-4 flex space-x-4">
@@ -204,7 +296,7 @@ export default function AutoCamera() {
                 onClick={processCard}
                 className="flex-1 py-3 bg-blue-500 text-white rounded-lg"
               >
-                Use Photo
+                Use Top Match
               </button>
             </div>
           </div>
