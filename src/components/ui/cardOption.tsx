@@ -1,49 +1,53 @@
 'use client'
 
-import React from 'react';
+import { useState, useEffect } from 'react';
 
-/**
- * Component to display card matching options
- * 
- * @param {Object} props
- * @param {Array} props.matchingCards - Array of card objects with id, name, confidence, and image
- * @param {Function} props.onSelectCard - Callback function when a card is selected
- * @param {boolean} props.visible - Whether the component should be visible
- */
-const CardOptions = ({ matchingCards = [], onSelectCard, visible = false }) => {
-  if (!visible || matchingCards.length === 0) {
+export default function CardOptions({ matchingCards, visible, onSelectCard }) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(visible);
+  }, [visible]);
+
+  if (!isVisible || !matchingCards || matchingCards.length === 0) {
     return null;
   }
 
   return (
-    <div className="absolute bottom-32 inset-x-0">
-      <div className="flex justify-center space-x-2 px-4 overflow-x-auto">
-        {matchingCards.map((card) => (
-          <div 
-            key={card.id} 
-            className="flex flex-col items-center"
-            onClick={() => onSelectCard(card)}
-          >
-            <div className="bg-white rounded-lg p-1 shadow-lg">
-              <img 
-                src={card.image} 
-                alt={card.name}
-                className="w-16 h-20 object-cover rounded"
-              />
-            </div>
-            <div className="text-white text-xs bg-black bg-opacity-70 px-2 py-1 mt-1 rounded text-center max-w-16">
-              {card.name}
-              {card.confidence && (
-                <div className="text-xs opacity-70">
-                  {(card.confidence * 100).toFixed(0)}%
+    <div className="absolute bottom-28 inset-x-0 flex justify-center">
+      <div className="bg-black bg-opacity-80 rounded-lg p-3 w-full max-w-md">
+        <h3 className="text-white text-center font-medium mb-3">Possible Matches</h3>
+        
+        <div className="grid grid-cols-2 gap-3">
+          {matchingCards.map((card) => (
+            <button
+              key={card.id}
+              className="flex flex-col items-center bg-gray-800 p-3 rounded-lg hover:bg-gray-700 transition-colors"
+              onClick={() => onSelectCard(card)}
+            >
+              <div className="flex items-center mb-2">
+                <img 
+                  src={card.image} 
+                  alt={card.name} 
+                  className="w-10 h-16 object-contain mr-2" 
+                />
+                <div className="text-left">
+                  <p className="text-white text-sm font-medium">{card.name}</p>
+                  <div className="mt-1 bg-gray-700 h-2 w-24 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-green-500" 
+                      style={{ width: `${card.confidence * 100}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-gray-400 text-xs mt-1">
+                    {Math.round(card.confidence * 100)}% confidence
+                  </p>
                 </div>
-              )}
-            </div>
-          </div>
-        ))}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
-};
-
-export default CardOptions;
+}
