@@ -109,10 +109,10 @@ export async function POST(request) {
     });
 
     // Create prompt for card identification
-    let prompt = "Analyze this image of a gaming card. Identify the specific card including its exact name, set, and rarity if visible. Your response must be valid JSON in exactly this format MAKE SURE THIS FORMAT!!: {\"matchingCards\": [{\"name\": \"card name\", \"confidence\": 0.95}]}";
+    let prompt = "Analyze this image of a gaming card. Identify the specific card including its exact name, set, and rarity if visible. Your response must be valid JSON in exactly this format MAKE SURE THIS FORMAT no matter what!!: {\"matchingCards\": [{\"name\": \"card name\", \"confidence\": 0.95}]}";
     
     if (gamePrompt) {
-      prompt = `${gamePrompt}\n\nYour response must be valid JSON in exactly this format  MAKE SURE THIS FORMAT!!: {\"matchingCards\": [{\"name\": \"card name\", \"confidence\": 0.95}]}`;
+      prompt = `${gamePrompt}\n\nYour response must be valid JSON in exactly this format  MAKE SURE THIS FORMAT no matter what!!: {\"matchingCards\": [{\"name\": \"card name\", \"confidence\": 0.95}]}`;
     }
 
     console.log("Calling OpenAI API...");
