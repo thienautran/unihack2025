@@ -7,8 +7,31 @@ import CardOptions from '@/components/ui/cardOption'
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
+import { Suspense } from 'react';
 
-export default function AutoCamera() {
+// Main component that doesn't directly use useSearchParams
+export default function ScanCardPage() {
+  return (
+    <Suspense fallback={<LoadingView />}>
+      <AutoCamera />
+    </Suspense>
+  );
+}
+
+// Loading component to show while suspense is resolving
+function LoadingView() {
+  return (
+    <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="text-white text-center">
+        <div className="w-12 h-12 border-4 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-2"></div>
+        <p>Loading camera...</p>
+      </div>
+    </div>
+  );
+}
+
+// The component that uses useSearchParams (now wrapped in Suspense)
+function AutoCamera() {
   const [cameraStatus, setCameraStatus] = useState('initializing');
   const [capturedImage, setCapturedImage] = useState(null);
   const [messageText, setMessageText] = useState("");
