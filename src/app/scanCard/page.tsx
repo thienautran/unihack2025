@@ -3,11 +3,14 @@
 import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 import Menu from '@/components/ui/menu'
+import CardOptions from '@/components/ui/cardOption'
 
 export default function AutoCamera() {
   const [cameraStatus, setCameraStatus] = useState('initializing');
   const [capturedImage, setCapturedImage] = useState(null);
   const [messageText, setMessageText] = useState("");
+  const [matchingCards, setMatchingCards] = useState([]);
+  const [showMatches, setShowMatches] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -68,14 +71,24 @@ export default function AutoCamera() {
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current || cameraStatus !== 'active') return;
 
-    // show text on the screen, let do hello world for now
-    // change this to the actually output from AI in the future
-    setMessageText("Hello World");
+    // Show text on the screen
+    setMessageText("Analyzing card...");
 
-    // text disappear after 3 seconds
+    // Sample placeholder matching cards data
+    // In a real app, this would come from your card recognition model
+    const dummyMatchingCards = [
+      { id: 1, name: "Visa Platinum", confidence: 0.89, image: "/api/placeholder/60/90" },
+      { id: 2, name: "Amex Gold", confidence: 0.72, image: "/api/placeholder/60/90" },
+      { id: 3, name: "Mastercard", confidence: 0.65, image: "/api/placeholder/60/90" },
+      { id: 4, name: "Discover", confidence: 0.51, image: "/api/placeholder/60/90" }
+    ];
+
+    // Show matching cards after a short delay to simulate processing
     setTimeout(() => {
       setMessageText("");
-    }, 3000); // 3000 milliseconds means 3 seconds
+      setMatchingCards(dummyMatchingCards);
+      setShowMatches(true);
+    }, 1500);
 
     // Code for capturing the actual photo is commented out as in your example
     // This keeps the camera running instead of capturing and stopping
@@ -103,12 +116,24 @@ export default function AutoCamera() {
 
   const retakePhoto = () => {
     setCapturedImage(null);
+    setShowMatches(false);
+    setMatchingCards([]);
     initializeCamera();
   };
 
   const processCard = () => {
-    // This is where you would add card processing logic
-    alert('Processing card...');
+    // Get the most confident card (first in the array)
+    const selectedCard = matchingCards.length > 0 ? matchingCards[0] : null;
+    if (selectedCard) {
+      alert(`Selected card: ${selectedCard.name} with confidence ${selectedCard.confidence.toFixed(2)}`);
+    } else {
+      alert('No card selected');
+    }
+  };
+  
+  const selectCard = (card) => {
+    alert(`You selected: ${card.name}`);
+    // Here you would normally process the user's card selection
   };
 
   return (
@@ -183,6 +208,13 @@ export default function AutoCamera() {
                 <div className="border-2 border-white border-opacity-70 rounded aspect-[0.63/1] h-3/5 max-w-1/2"></div>
               </div>
             )}
+            
+            {/* Card matching results */}
+            <CardOptions 
+              matchingCards={matchingCards}
+              visible={showMatches}
+              onSelectCard={selectCard}
+            />
             
             {/* Capture button */}
             {cameraStatus === 'active' && (
