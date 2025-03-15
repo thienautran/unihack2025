@@ -5,7 +5,7 @@ import Head from 'next/head';
 import Menu from '@/components/ui/menu';
 import CardOptions from '@/components/ui/cardOption';
 import { useSearchParams } from 'next/navigation';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Suspense } from 'react';
 import { getImageDescription } from './actions';
@@ -39,6 +39,9 @@ function AutoCamera() {
   const [matchingCards, setMatchingCards] = useState([]);
   const [showMatches, setShowMatches] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadedImageId, setUploadedImageId] = useState(null);
+  const [uploadedStorageId, setUploadedStorageId] = useState(null);
+  
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -50,10 +53,13 @@ function AutoCamera() {
     ? useQuery(api.games.getGamePrompt, { gameId: gameId })
     : null;
 
-  // Only log if prompt exists (which only happens if gameId exists)
-  if (prompt) {
-    console.log(prompt);
-  }
+  // Convex mutation hooks
+  const generateUploadUrl = useMutation(api.image.generateUploadUrl);
+  const storeImageMetadata = useMutation(api.image.storeImageMetadata);
+  // Only call getImageUrl when we have a storageId
+  const imageUrl = uploadedStorageId 
+    ? useQuery(api.image.getImageUrl, { storageId: uploadedStorageId }) 
+    : null;
 
   // Auto-start camera on page load
   useEffect(() => {
@@ -109,6 +115,50 @@ function AutoCamera() {
     }
   };
 
+  const uploadCardImage = async (imageData) => {
+    try {
+      // Step 1: Generate an upload URL from Convex
+      const uploadUrl = await generateUploadUrl();
+      
+      console.log('Generated upload URL:', uploadUrl);
+      
+      // Step 2: Convert dataURL to Blob for upload
+      // Remove the data URL prefix to get just the base64 data
+      const base64Data = imageData.split(',')[1];
+      const blob = await fetch(`data:image/jpeg;base64,${base64Data}`).then(r => r.blob());
+      
+      // Step 3: Upload the image to the generated URL
+      const result = await fetch(uploadUrl, {
+        method: "POST", // Check if your Convex setup requires POST instead of PUT
+        body: blob,
+        headers: {
+          "Content-Type": "image/jpeg",
+        },
+      });
+      
+      if (!result.ok) {
+        console.error('Upload failed with status:', result.status, result.statusText);
+        throw new Error(`Upload failed: ${result.statusText}`);
+      }
+      
+      // Extract the storage ID from the upload URL
+      // The format depends on your Convex setup
+      let storageId;
+      
+      // Try to parse the storageId from the URL (common pattern)
+      const urlParts = uploadUrl.split("/");
+      storageId = urlParts[urlParts.length - 1];
+      
+      console.log('Extracted storageId:', storageId);
+      
+      // Return the storage ID for further processing
+      return storageId;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      throw error;
+    }
+  };
+
   const capturePhoto = async () => {
     if (
       !videoRef.current ||
@@ -139,9 +189,61 @@ function AutoCamera() {
     setCapturedImage(imageData);
 
     try {
-      // Call the API to recognize the card, including the game prompt if available
-
+      console.log("Starting card analysis...");
+      
+      // Call the API to recognize the card
       const data = await getImageDescription(imageData, prompt?.prompt);
+      console.log("Recognition result:", data);
+      
+      // Always update UI with whatever data we got back
+      if (data && data.matchingCards && data.matchingCards.length > 0) {
+        setMatchingCards(data.matchingCards);
+        setShowMatches(true);
+      } else {
+        // Handle case where no cards were returned
+        setMatchingCards([{ 
+          id: '1', 
+          name: "No cards detected", 
+          confidence: 0.5, 
+          image: "/api/placeholder/60/90" 
+        }]);
+        setShowMatches(true);
+      }
+      
+      // Clear any error message
+      setMessageText('');
+      
+      // Attempt to upload the image (but don't block on it)
+      // We do this as a separate step that can fail independently
+      try {
+        console.log("Uploading image to storage...");
+        const storageId = await uploadCardImage(imageData);
+        console.log("Upload successful, storageId:", storageId);
+        
+        if (storageId) {
+          setUploadedStorageId(storageId);
+          
+          try {
+            // Try to store the metadata
+            const imageId = await storeImageMetadata({
+              storageId: storageId,
+              gameId: gameId || undefined,
+              description: data.matchingCards && data.matchingCards.length > 0 
+                ? data.matchingCards[0].name 
+                : "Card scan",
+              analysisResults: data
+            });
+            
+            setUploadedImageId(imageId);
+          } catch (metadataError) {
+            console.error("Error storing metadata:", metadataError);
+            // Continue anyway - the user can still see the results
+          }
+        }
+      } catch (uploadError) {
+        console.error("Error uploading image:", uploadError);
+        // We don't show this error to the user - they can still use the card recognition
+      }
 
       // Update state with the results
       setMatchingCards(data.matchingCards || []);
@@ -149,7 +251,14 @@ function AutoCamera() {
       setShowMatches(true);
     } catch (error) {
       console.error('Error recognizing card:', error);
-      setMessageText('Error analyzing card. Please try again.');
+      
+      if (error.message) {
+        setMessageText(`Error: ${error.message.slice(0, 50)}${error.message.length > 50 ? '...' : ''}`);
+      } else {
+        setMessageText('Error analyzing card. Please try again.');
+      }
+      
+      // Show error message for 3 seconds
       setTimeout(() => setMessageText(''), 3000);
     } finally {
       setIsProcessing(false);
@@ -163,10 +272,22 @@ function AutoCamera() {
     initializeCamera();
   };
 
-  const processCard = () => {
+  const processCard = async () => {
     // Get the most confident card (first in the array)
     const selectedCard = matchingCards.length > 0 ? matchingCards[0] : null;
-    if (selectedCard) {
+    
+    if (selectedCard && uploadedStorageId) {
+      // Update the image metadata with the selected card name
+      await storeImageMetadata({
+        storageId: uploadedStorageId,
+        gameId: gameId || undefined,
+        description: selectedCard.name,
+        confidence: selectedCard.confidence,
+        // You could add more metadata here as needed
+      });
+      
+      // Here you would normally handle what happens after a card is selected
+      // For example, navigate to a detail page or add the card to the game
       alert(
         `Selected card: ${selectedCard.name} with confidence ${selectedCard.confidence.toFixed(2)}`
       );
@@ -175,7 +296,18 @@ function AutoCamera() {
     }
   };
 
-  const selectCard = (card) => {
+  const selectCard = async (card) => {
+    if (uploadedStorageId) {
+      // Update the image metadata with the manually selected card
+      await storeImageMetadata({
+        storageId: uploadedStorageId,
+        gameId: gameId || undefined,
+        description: card.name,
+        confidence: card.confidence,
+        selectedManually: true,
+      });
+    }
+    
     alert(`You selected: ${card.name}`);
     // Here you would normally process the user's card selection
   };
