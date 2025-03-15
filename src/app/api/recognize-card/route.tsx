@@ -27,8 +27,9 @@ export async function POST(request) {
     };
     
     // Create a prompt for card identification
-    const prompt = "Analyze this image of a payment card. Identify what specific card it is (brand, type, level). Return a JSON response with the following format: {\"matchingCards\": [{\"name\": \"card name\", \"confidence\": 0.XX}, ...]} - Include the top 4 most likely cards with confidence scores between 0 and 1. Be specific with card names (e.g., 'Chase Sapphire Preferred' rather than just 'Visa').";
+    const prompt = "Analyze this image of a gaming card (like Magic: The Gathering, Pokémon, Yu-Gi-Oh!, playing cards etc.). Identify the specific card including its exact name, set, and rarity if visible. Return a JSON response with the following format: {\"matchingCards\": [{\"name\": \"card name\", \"confidence\": 0.XX}, ...]} - Include the top 4 most likely cards with confidence scores between 0 and 1. Be specific with card names (e.g., 'Charizard GX Rainbow Rare' rather than just 'Pokémon Card').";
     
+
     // Generate content with the image
     const result = await model.generateContent([prompt, imagePart]);
     const response = await result.response;
