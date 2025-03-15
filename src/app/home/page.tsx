@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import CardGamesView from '@/components/ui/cardGamesView';
 import SearchBar from '@/components/ui/searchBar';
-import SideMenu from '@/components/ui/sideMenu';
+//import SideMenu from '@/components/ui/sideMenu';
 import Header from '@/components/ui/header';
 import { api } from '../../../convex/_generated/api';
 import { useQuery } from 'convex/react';
@@ -30,7 +30,7 @@ export default function HomePage() {
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
       {/* Use client components for interactive parts */}
-      <SideMenu />
+      {/* <SideMenu /> */}
       <div className="min-h-screen">
         <Header />
         <SearchBar />
