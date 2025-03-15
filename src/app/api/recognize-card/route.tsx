@@ -1,15 +1,16 @@
-// app/api/recognize-card/route.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    // Get the image data from the request
-    const { imageData } = await request.json();
+    // Get the image data and game prompt from the request
+    const { imageData, gamePrompt } = await request.json();
     
     if (!imageData) {
       return NextResponse.json({ error: 'No image data provided' }, { status: 400 });
     }
+
+    
     
     // Convert base64 data URL to base64 string expected by Google API
     const base64Image = imageData.split(',')[1];
@@ -26,9 +27,14 @@ export async function POST(request) {
       }
     };
     
-    // Create a prompt for card identification
-    const prompt = "Analyze this image of a gaming card (like Magic: The Gathering, Pokémon, Yu-Gi-Oh!, playing cards etc.). Identify the specific card including its exact name, set, and rarity if visible. Return a JSON response with the following format: {\"matchingCards\": [{\"name\": \"card name\", \"confidence\": 0.XX}, ...]} - Include the top 4 most likely cards with confidence scores between 0 and 1. Be specific with card names (e.g., 'Charizard GX Rainbow Rare' rather than just 'Pokémon Card').";
+    // Create a prompt for card identification, including the game prompt if available
+    let prompt = "Analyze this image of a gaming card (like Magic: The Gathering, Pokémon, Yu-Gi-Oh!, playing cards etc.). Identify the specific card including its exact name, set, and rarity if visible. Return a JSON response with the following format: {\"matchingCards\": [{\"name\": \"card name\", \"confidence\": 0.XX}, ...]} - Include the top 4 most likely cards with confidence scores between 0 and 1. Be specific with card names (e.g., 'Charizard GX Rainbow Rare' rather than just 'Pokémon Card').";
     
+    // If we have a specific game prompt, include it in the AI request
+   
+    if (gamePrompt) {
+      prompt = `${gamePrompt}\n\nAnalyze this image and return a JSON response with the following format: {\"matchingCards\": [{\"name\": \"card name\", \"confidence\": 0.XX}, ...]} - Include the top 4 most likely matches with confidence scores between 0 and 1.`;
+    }
 
     // Generate content with the image
     const result = await model.generateContent([prompt, imagePart]);
