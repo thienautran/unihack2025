@@ -5,6 +5,8 @@ import Head from 'next/head';
 import Menu from '@/components/ui/menu'
 import CardOptions from '@/components/ui/cardOption'
 
+
+
 export default function AutoCamera() {
   const [cameraStatus, setCameraStatus] = useState('initializing');
   const [capturedImage, setCapturedImage] = useState(null);
