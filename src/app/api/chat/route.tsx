@@ -1,23 +1,23 @@
-// import { GoogleGenerativeAI } from "@google/generative-ai";
+// import { google } from "@ai-sdk/google";
+// import { generateText } from "ai";
 
-// const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
-
-// export async function POST(req: Request) {
+// export async function GET() {
 //   try {
-//     const { messages } = await req.json(); // Get messages from frontend
-//     const chatModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+//     // Hardcoded test question
+//     const testQuestion = "What is the capital of France?";
 
-//     // Extract the last user message to send to Gemini
-//     const userMessage = messages[messages.length - 1].content;
+//     // Use Gemini 1.5 Flash model
+//     const model = google("gemini-1.5-flash");
 
-//     const result = await chatModel.generateContent({
-//       contents: [{ role: "user", parts: [{ text: userMessage }] }],
+//     // Generate response
+//     const result = await generateText({
+//       model,
+//       prompt: testQuestion,
 //     });
 
-//     // Extract the assistant's response
-//     const responseText = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
+//     console.log("Gemini AI Response:", result.text); // Log response to terminal
 
-//     return new Response(JSON.stringify({ message: responseText }), {
+//     return new Response(JSON.stringify({ message: result.text }), {
 //       headers: { "Content-Type": "application/json" },
 //       status: 200,
 //     });
@@ -30,99 +30,42 @@
 //   }
 // }
 
-// import { GoogleGenerativeAI } from "@google/generative-ai";
-
-// const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
-
-// export async function POST(req: Request) {
-//   try {
-//     const { messages } = await req.json();
-//     const chatModel = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-//     const userMessage = messages[messages.length - 1].content;
-
-//     const result = await chatModel.generateContent({
-//       contents: [{ role: "user", parts: [{ text: userMessage }] }],
-//     });
-
-//     const responseText = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
-
-//     return new Response(JSON.stringify({ message: responseText }), {
-//       headers: { "Content-Type": "application/json" },
-//       status: 200,
-//     });
-//   } catch (error) {
-//     return new Response(JSON.stringify({ error: "Failed to fetch AI response" }), {
-//       status: 500,
-//       headers: { "Content-Type": "application/json" },
-//     });
-//   }
-// }
-
-// // ✅ Add a GET method for debugging
-// export async function GET() {
-//   return new Response(JSON.stringify({ message: "API is working! Use POST instead." }), {
-//     headers: { "Content-Type": "application/json" },
-//     status: 200,
-//   });
-// }
-
-
-// import { GoogleGenerativeAI } from "@google/generative-ai";
-
-// const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
-
-// export async function GET() {
-//   try {
-//     const chatModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-//     // Hardcoded test query
-//     const testQuestion = "What is the capital of france?";
-
-//     const result = await chatModel.generateContent({
-//       contents: [{ role: "user", parts: [{ text: testQuestion }] }],
-//     });
-
-//     const responseText = result.response?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
-
-//     console.log("Gemini Flash API Response:", responseText);
-
-//     return new Response(JSON.stringify({ message: responseText }), {
-//       headers: { "Content-Type": "application/json" },
-//       status: 200,
-//     });
-//   } catch (error) {
-//     console.error("Gemini API Error:", error);
-//     return new Response(JSON.stringify({ error: "Failed to fetch AI response" }), {
-//       status: 500,
-//       headers: { "Content-Type": "application/json" },
-//     });
-//   }
-// }
 
 import { google } from "@ai-sdk/google";
-import { generateText } from "ai";
+import { streamText } from "ai";
+import fs from "fs";
+import path from "path";
+
+export const maxDuration = 60; // Max execution time
 
 export async function GET() {
   try {
-    // Hardcoded test question
-    const testQuestion = "What is the capital of France?";
+    // Define the path to the local image
+    const imagePath = path.join(process.cwd(), "src/app/resource/image/download.png");
 
-    // Use Gemini 1.5 Flash model
+    // Read the image file and convert it to a Base64 string
+    const imageBuffer = fs.readFileSync(imagePath);
+    const imageBase64 = imageBuffer.toString("base64");
+
+    // Initialize the Gemini model
     const model = google("gemini-1.5-flash");
 
-    // Generate response
-    const result = await generateText({
+    // Stream the response by sending a message with both text and image parts
+    const result = streamText({
       model,
-      prompt: testQuestion,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "What flag is this?" },
+            { type: "image", image: imageBase64 },
+          ],
+        },
+      ],
     });
 
-    console.log("Gemini AI Response:", result.text); // Log response to terminal
-
-    return new Response(JSON.stringify({ message: result.text }), {
-      headers: { "Content-Type": "application/json" },
-      status: 200,
-    });
+    // Return streaming response to client
+    return result.toDataStreamResponse();
   } catch (error) {
     console.error("Gemini API Error:", error);
     return new Response(JSON.stringify({ error: "Failed to fetch AI response" }), {
