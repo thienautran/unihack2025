@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Unihack 2025 - KFC',
-  description: 'Unihack project',
+  title: 'Echo Deck',
+  description: 'Access your card deck with a snap',
 };
 
 export default function RootLayout({
