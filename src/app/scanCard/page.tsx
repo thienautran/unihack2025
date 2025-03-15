@@ -4,8 +4,9 @@ import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 import Menu from '@/components/ui/menu'
 import CardOptions from '@/components/ui/cardOption'
-
-
+import { useSearchParams } from 'next/navigation';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 
 export default function AutoCamera() {
   const [cameraStatus, setCameraStatus] = useState('initializing');
@@ -17,6 +18,19 @@ export default function AutoCamera() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+  const searchParams = useSearchParams();
+  const gameId = searchParams.get('id');
+  
+  // Only fetch the prompt if gameId exists
+  const prompt = gameId 
+    ? useQuery(api.games.getGamePrompt, { gameId: gameId }) 
+    : null;
+  
+  // Only log if prompt exists (which only happens if gameId exists)
+  if (prompt) {
+    console.log(prompt);
+  }
+
 
   // Auto-start camera on page load
   useEffect(() => {
@@ -95,13 +109,16 @@ export default function AutoCamera() {
     setCapturedImage(imageData);
     
     try {
-      // Call the API to recognize the card
+      // Call the API to recognize the card, including the game prompt if available
       const response = await fetch('/api/recognize-card', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ imageData }),
+        body: JSON.stringify({ 
+          imageData,
+          gamePrompt: prompt?.prompt // Send the game prompt to the API
+        }),
       });
       
       if (!response.ok) {
@@ -121,7 +138,7 @@ export default function AutoCamera() {
     } finally {
       setIsProcessing(false);
     }
-  };
+};
 
   const retakePhoto = () => {
     setCapturedImage(null);

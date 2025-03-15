@@ -26,11 +26,11 @@ export default function CardOptions({ matchingCards, visible, onSelectCard }) {
               onClick={() => onSelectCard(card)}
             >
               <div className="flex items-center mb-2">
-                <img 
+                {/* <img 
                   src={card.image} 
                   alt={card.name} 
                   className="w-10 h-16 object-contain mr-2" 
-                />
+                /> */}
                 <div className="text-left">
                   <p className="text-white text-sm font-medium">{card.name}</p>
                   <div className="mt-1 bg-gray-700 h-2 w-24 rounded-full overflow-hidden">
