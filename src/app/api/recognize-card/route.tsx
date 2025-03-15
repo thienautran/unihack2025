@@ -17,7 +17,7 @@ export async function POST(request) {
     
     // Initialize Google Generative AI client with the correct API
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     
     // Prepare the image part
     const imagePart = {

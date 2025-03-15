@@ -19,14 +19,17 @@ export default function AutoCamera() {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const searchParams = useSearchParams();
-  
   const gameId = searchParams.get('id');
- 
-  const prompt = useQuery(api.games.getGamePrompt, { gameId: gameId });
- 
-
-
-  console.log(prompt)
+  
+  // Only fetch the prompt if gameId exists
+  const prompt = gameId 
+    ? useQuery(api.games.getGamePrompt, { gameId: gameId }) 
+    : null;
+  
+  // Only log if prompt exists (which only happens if gameId exists)
+  if (prompt) {
+    console.log(prompt);
+  }
 
 
   // Auto-start camera on page load
