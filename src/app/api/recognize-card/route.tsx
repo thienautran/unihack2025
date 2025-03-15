@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
@@ -9,37 +9,51 @@ export async function POST(request) {
     if (!imageData) {
       return NextResponse.json({ error: 'No image data provided' }, { status: 400 });
     }
+    
+    // Log API key existence for debugging
+    const apiKey = process.env.OPENAI_API_KEY;
+    console.log('OpenAI API Key exists:', !!apiKey);
+    
+    if (!apiKey) {
+      console.error('Missing OpenAI API key in environment');
+      return NextResponse.json({ error: 'Configuration error: Missing API key' }, { status: 500 });
+    }
+    
+    // Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: apiKey
+    });
 
-    
-    
-    // Convert base64 data URL to base64 string expected by Google API
-    const base64Image = imageData.split(',')[1];
-    
-    // Initialize Google Generative AI client with the correct API
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    
-    // Prepare the image part
-    const imagePart = {
-      inlineData: {
-        data: base64Image,
-        mimeType: "image/jpeg"
-      }
-    };
-    
-    // Create a prompt for card identification, including the game prompt if available
+    // Create a prompt for card identification
     let prompt = "Analyze this image of a gaming card (like Magic: The Gathering, Pokémon, Yu-Gi-Oh!, playing cards etc.). Identify the specific card including its exact name, set, and rarity if visible. Return a JSON response with the following format: {\"matchingCards\": [{\"name\": \"card name\", \"confidence\": 0.XX}, ...]} - Include the top 4 most likely cards with confidence scores between 0 and 1. Be specific with card names (e.g., 'Charizard GX Rainbow Rare' rather than just 'Pokémon Card').";
     
-    // If we have a specific game prompt, include it in the AI request
-   
+    // If we have a specific game prompt, include it
     if (gamePrompt) {
       prompt = `${gamePrompt}\n\nAnalyze this image and return a JSON response with the following format: {\"matchingCards\": [{\"name\": \"card name\", \"confidence\": 0.XX}, ...]} - Include the top 4 most likely matches with confidence scores between 0 and 1.`;
     }
 
-    // Generate content with the image
-    const result = await model.generateContent([prompt, imagePart]);
-    const response = await result.response;
-    const responseText = response.text();
+    // Make request to OpenAI's API
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // Using the latest GPT-4o model with vision capabilities
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            {
+              type: "image_url",
+              image_url: {
+                url: imageData, // OpenAI can handle the full data URL
+              },
+            },
+          ],
+        },
+      ],
+      max_tokens: 1024,
+    });
+
+    // Extract the response text
+    const responseText = response.choices[0].message.content;
     
     // Try to parse the JSON response
     try {
@@ -62,7 +76,7 @@ export async function POST(request) {
         image: `/api/placeholder/60/90`
       }));
       
-      return NextResponse.json({ 
+      return NextResponse.json({
         matchingCards: matchingCards,
         rawResponse: responseText
       });
@@ -70,7 +84,7 @@ export async function POST(request) {
       console.error('Error parsing AI response:', jsonError, responseText);
       
       // Fallback response if parsing fails
-      return NextResponse.json({ 
+      return NextResponse.json({
         matchingCards: [
           { id: '1', name: "Unknown Card", confidence: 0.5, image: "/api/placeholder/60/90" },
         ],
