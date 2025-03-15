@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function CardGamesView({ initialCardGames }) {
+  const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
   const [games, setGames] = useState(initialCardGames.map(game => ({ ...game, favorite: false })));
   const [filteredGames, setFilteredGames] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-
+  
   // Animation effect when component mounts
   useEffect(() => {
     setIsVisible(true);
@@ -64,7 +66,10 @@ export default function CardGamesView({ initialCardGames }) {
   }, [searchTerm, games]);
 
   // Toggle favorite status
-  const toggleFavorite = (id) => {
+  const toggleFavorite = (e, id) => {
+    // Prevent the card click from triggering
+    e.stopPropagation();
+    
     setGames(prevGames => {
       const updatedGames = prevGames.map(game => 
         game.id === id ? { ...game, favorite: !game.favorite } : game
@@ -78,6 +83,11 @@ export default function CardGamesView({ initialCardGames }) {
       
       return updatedGames;
     });
+  };
+
+  // Handle card click and redirect to scanCard with the game ID
+  const handleCardClick = (id) => {
+    router.push(`/scanCard?id=${id}`);
   };
 
   return (
@@ -97,11 +107,12 @@ export default function CardGamesView({ initialCardGames }) {
             {filteredGames.map((game) => (
               <div 
                 key={game.id} 
-                className="bg-slate-800 bg-opacity-60 rounded-xl p-4 transition-all duration-300 border border-slate-700 flex justify-between items-center shadow-md hover:shadow-lg hover:translate-y-px"
+                className="bg-slate-800 bg-opacity-60 rounded-xl p-4 transition-all duration-300 border border-slate-700 flex justify-between items-center shadow-md hover:shadow-lg hover:translate-y-px cursor-pointer"
+                onClick={() => handleCardClick(game.id)}
               >
                 <h3 className="font-medium text-lg">{game.name}</h3>
                 <button 
-                  onClick={() => toggleFavorite(game.id)}
+                  onClick={(e) => toggleFavorite(e, game.id)}
                   className="focus:outline-none"
                   aria-label={game.favorite ? "Remove from favorites" : "Add to favorites"}
                 >

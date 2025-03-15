@@ -4,8 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 import Menu from '@/components/ui/menu'
 import CardOptions from '@/components/ui/cardOption'
-
-
+import { useSearchParams } from 'next/navigation';
 
 export default function AutoCamera() {
   const [cameraStatus, setCameraStatus] = useState('initializing');
@@ -17,6 +16,10 @@ export default function AutoCamera() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+  const searchParams = useSearchParams();
+  const gameId = searchParams.get('id'); 
+  console.log(gameId)
+
 
   // Auto-start camera on page load
   useEffect(() => {
