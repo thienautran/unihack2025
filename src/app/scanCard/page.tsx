@@ -10,6 +10,8 @@ import { api } from '../../../convex/_generated/api';
 import { Suspense } from 'react';
 import { getImageDescription } from './actions';
 
+import OpenAILoadingSpinner  from '@/components/ui/openaiSpinner';
+
 // Main component that doesn't directly use useSearchParams
 export default function ScanCardPage() {
   return (
@@ -42,6 +44,9 @@ function AutoCamera() {
   const [uploadedImageId, setUploadedImageId] = useState(null);
   const [uploadedStorageId, setUploadedStorageId] = useState(null);
   
+
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -186,7 +191,7 @@ function AutoCamera() {
 
     try {
       console.log("Starting card analysis...");
-      
+      setIsAIProcessing(true);
       // Call the API to recognize the card
       const data = await getImageDescription(imageData, gamePrompt?.prompt);
       console.log("Recognition result:", data);
@@ -241,6 +246,7 @@ function AutoCamera() {
       setTimeout(() => setMessageText(''), 3000);
     } finally {
       setIsProcessing(false);
+      setIsAIProcessing(false); 
     }
   };
 
@@ -280,6 +286,8 @@ function AutoCamera() {
           content='width=device-width, initial-scale=1, maximum-scale=1'
         />
       </Head>
+
+      {isAIProcessing && <OpenAILoadingSpinner message="Analyzing image..." />}
 
       {/* Hidden canvas for image capture */}
       <canvas
