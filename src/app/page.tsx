@@ -23,7 +23,6 @@ export default function Home() {
     '/image2.jpg',
     '/image3.jpg',
     '/image4.jpg'
-
   ];
 
   useEffect(() => {
@@ -70,7 +69,16 @@ export default function Home() {
           <div className='absolute inset-0 bg-black opacity-50'></div>
         </div>
         
-        <div className='relative z-10 flex flex-col justify-center items-center h-full text-center'>
+        <div className='relative z-10 flex flex-col justify-center items-center h-full text-center pt-16'>
+          {/* Logo added at the top, but with more space above */}
+          <div className='absolute top-12 left-0 right-0 flex justify-center'>
+            <img 
+              src='/logoEcho.png' 
+              alt='Echo Deck Logo' 
+              className='h-20 w-auto object-contain brightness-0 invert'
+            />
+          </div>
+          
           <h1 className='text-5xl font-bold leading-tight mb-4'>
             Welcome to Echo Deck!
           </h1>
@@ -80,10 +88,9 @@ export default function Home() {
           </p>
           <Link
             href={'/home'}
-            className='p-[3px] relative'
+            className='relative'
           >
-            <div className='absolute inset-0 bg-gradient-to-r from-indigo-300 to-teal-500 rounded-lg' />
-            <div className='px-8 py-2 bg-white/50 rounded-[6px] relative group transition duration-200 text-black hover:bg-transparent'>
+            <div className='px-8 py-2 border-2 border-white text-white bg-transparent rounded-lg hover:bg-white/10 transition duration-200'>
               Get Started
             </div>
           </Link>
