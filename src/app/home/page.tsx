@@ -28,15 +28,28 @@ export default function HomePage() {
   })) || fallbackGames;
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
-      {/* Use client components for interactive parts */}
-      {/* <SideMenu /> */}
+    <div className="relative min-h-screen bg-black text-white">
       <div className="min-h-screen">
-        <Header />
-        <SearchBar />
+        <div className="sticky top-0 z-50 bg-black border-b border-gray-800 px-4 py-2">
+          <div className="flex justify-center items-center">
+            <img
+              src='/logoEcho.png'
+              alt='Echo Deck Logo'
+              className='h-8 w-auto object-contain brightness-0 invert'
+            />
+          </div>
+        </div>
+        
+        <div className="px-4 py-2">
+          <SearchBar />
+        </div>
+        
         {games === undefined ? (
           <div className="flex justify-center items-center p-8">
-            <p>Loading games...</p>
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-t-white border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-2"></div>
+              <p>Loading games...</p>
+            </div>
           </div>
         ) : (
           <CardGamesView initialCardGames={transformedGames} />

@@ -100,14 +100,14 @@ export default function CardGamesView({ initialCardGames }) {
       <div className="p-4 pb-24 overflow-y-auto max-h-[calc(100vh-132px)]">
         {filteredGames.length === 0 ? (
           <div className="text-center py-10">
-            <p className="text-slate-400">No card games found matching your search.</p>
+            <p className="text-gray-400">No card games found matching your search.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3">
             {filteredGames.map((game) => (
               <div 
                 key={game.id} 
-                className="bg-slate-800 bg-opacity-60 rounded-xl p-4 transition-all duration-300 border border-slate-700 flex justify-between items-center shadow-md hover:shadow-lg hover:translate-y-px cursor-pointer"
+                className="bg-gray-900 rounded-xl p-4 transition-all duration-300 border border-gray-800 flex justify-between items-center shadow-md hover:shadow-lg hover:bg-gray-800 cursor-pointer"
                 onClick={() => handleCardClick(game.id)}
               >
                 <h3 className="font-medium text-lg">{game.name}</h3>
@@ -118,7 +118,7 @@ export default function CardGamesView({ initialCardGames }) {
                 >
                   <Heart 
                     className={`h-6 w-6 transform transition-all duration-300 ${
-                      game.favorite ? 'fill-teal-500 text-teal-500 scale-110' : 'text-slate-400'
+                      game.favorite ? 'fill-white text-white scale-110' : 'text-gray-400'
                     }`}
                   />
                 </button>
