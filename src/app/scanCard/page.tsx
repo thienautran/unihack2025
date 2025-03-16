@@ -345,10 +345,10 @@ function AutoCamera() {
 
             {/* Card capture guide - Modified to be vertical card shaped */}
             {cameraStatus === 'active' && (
-              <div className='absolute inset-0 flex items-center justify-center pointer-events-none'>
-                <div className='border-2 border-white border-opacity-70 rounded aspect-[0.63/1] h-3/5 max-w-1/2'></div>
-              </div>
-            )}
+  <div className='absolute inset-0 flex items-center justify-center pointer-events-none'>
+    <div className='border-2 border-white border-opacity-70 rounded-xl aspect-[0.63/1] h-2/5 max-w-1/2'></div>
+  </div>
+)}
 
             {/* Card matching results */}
             <CardOptions
